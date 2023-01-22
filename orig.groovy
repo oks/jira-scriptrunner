@@ -1,8 +1,8 @@
 
-def spent_p = 'customfield_10040'
+
 def current_update = 'customfield_10054'
 def ie = 'customfield_10035'
-def scope_des = 'customfield_10500'
+def scope_d = 'customfield_10500'
 def scope_pm = 'customfield_10049'
 def sumie = 'customfield_10074'
 def sum_ie_d = 'customfield_10039'
@@ -30,20 +30,41 @@ if (!epicKey) {
     return
 }
 
+    // def sum_spent_design = 0.0
+    // def sum_spent_pm = 0.0
+    
+    // def sum_orig_design = 0.0
+    // def sum_orig_communication = 0.0
+    // def sum_orig_pm = 0.0
+    
+    // def sum_ie_design = 0.0
+    // def sum_ie_communication = 0.0
+    // def sum_ie_pm = 0.0
+    
+    // def scope_design = ''
+    // def scope_pm = ''
 
 
+// logger.warn("sum = {}", sum)
 
-logger.warn("sum = {}", sum)
+def pm = calc_issues("linkedissue = $epicKey AND (issuetype = 'PM Task')", epicKey)
+def design = calc_issues("linkedissue = $epicKey AND (issuetype != 'PM Task')", epicKey)
+def communic = calc_issues("linkedissue = $epicKey AND (issuetype = 'Communication')", epicKey)
 
 put("/rest/api/2/issue/$epicKey")
     .header("Content-Type", "application/json")
     .body([
         fields: [
-            "${epic_field_to_update}": (sum / 3600).round(1) as Float
+            "${sum_spent_p}": pm["sum_spent"],
+            "${sum_orig_p}": pm["sum_estimate"],
+            "${sum_ie_p}": pm["sum_ie"],
+            "${scope_pm}": pm["sum_scope"],
+            "${sum_spent_d}": design["sum_spent"],
+            "${sum_orig_d}": design["sum_estimate"],
+            "${sum_ie_d}": design["sum_ie"],
+            "${scope_d}": design["sum_scope"],
         ]
     ]).asString()
-    
-    
     
 
     
@@ -52,31 +73,19 @@ put("/rest/api/2/issue/$epicKey")
 ///Helpers
 ///
 
-public Map enumerate_all_issues (String JQL, Object epicKey) {
+public Map calc_issues(String JQL, Object epicKey) {
     def is_finished = true
 
     int startAt = 0
-    
-    def sum_spent_design = 0.0
-    def sum_spent_pm = 0.0
-    
-    def sum_orig_design = 0.0
-    def sum_orig_communication = 0.0
-    def sum_orig_pm = 0.0
-    
-    def sum_ie_design = 0.0
-    def sum_ie_communication = 0.0
-    def sum_ie_pm = 0.0
-    
-    def scope_design = ''
-    def scope_pm = ''
     
     def Map result;
 
 
     def sum_estimate = 0.0
     def sum_spent = 0.0
-
+    def sum_scope = ''
+    def sum_ie = 0.0
+    def ie = 'customfield_10035'
 
     while (is_finished) {
 
@@ -114,12 +123,20 @@ public Map enumerate_all_issues (String JQL, Object epicKey) {
         def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
         sum_spent += time
         
+        def numberCValue = fields[ie] ?: 0
+        sum_ie += numberCValue as Float
+    
+        def issueSummary = fields.find { it.key == 'summary' }?.value as String
+        sum_scope += it.key + ' ' + issueSummary + '\n'
+        }
+    }
+
         result["sum_spent"] = (sum_spent / 3600).round(1)
         result["sum_estimate"] = (sum_estimate / 3600).round(1)
+        result["sum_ie"] = sum_ie
+        result["sum_scope"] = sum_scope
         
-        
-}
-}
+        return result
 }
 
 
