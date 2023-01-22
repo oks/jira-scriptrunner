@@ -14,6 +14,16 @@ def sum-orig-subtasks = 'customfield_10069'
 def sum-spent-d = 'customfield_10037'
 def sum-spent-p = 'customfield_10040'
 
+def epic-link = 'customfield_10014'
+
+def issue-type-pm-task = '10012'
+def issue-type-communication = '10015'
+def issue-type-design-component = '10011'
+def issue-type-design-subtask = '10016'
+
+
+//Scenario 
+//When work is logged / updated / deleted recalculate Epic total time spent 
 
 //Epic Link Custom Field ID
 final epicLinkCf = get("/rest/api/2/field")
