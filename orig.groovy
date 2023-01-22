@@ -2,7 +2,7 @@
 
 def current_update = 'customfield_10054'
 def ie = 'customfield_10035'
-def scope_d = 'customfield_10500'
+def scope_d = 'customfield_10050'
 def scope_pm = 'customfield_10049'
 def sumie = 'customfield_10074'
 def sum_ie_d = 'customfield_10039'
