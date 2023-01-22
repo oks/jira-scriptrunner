@@ -67,6 +67,8 @@ issues.each {
         
     def numberCfValue = fields["timeoriginalestimate"] ?: 0
     sum += numberCfValue as Float 
+    
+    def test = sumWorklogs("linkedissue = $epicKey AND (issuetype = 'PM Task')", epicKey, time_tracking_calc())
 }
 }
 
@@ -82,12 +84,28 @@ put("/rest/api/2/issue/$epicKey")
     
     
     
+
     
     
     ///
 ///Helpers
 ///
-   public Number sumWorklogs(String jql, Object epic_key) { 
+
+    def time_tracking_calc = { Map jira_issue ->  
+        def timeObject = jira_issue.find { it.key == 'timetracking' }?.value as Map
+        def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
+        
+        return time
+    }
+
+//     public Number time_tracking_calc (Map jira_issue) {
+//         def timeObject = jira_issue.find { it.key == 'timetracking' }?.value as Map
+//         def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
+        
+//         return time
+//     }
+
+   public Number sum_issue_fields(String jql, Object epic_key, function) { 
        
         def sum_worklogs = 0
         def allChildIssues = get("/rest/api/2/search")
@@ -100,18 +118,26 @@ put("/rest/api/2/issue/$epicKey")
      //Get all issues in Epic and skip Epic itself
      def issues = allChildIssues.findAll { it.key != epic_key }   
        
+       
+
      
      issues.each {
-         def issuesForTime = get("/rest/api/2/issue/$it.key")
+         def issue_details = get("/rest/api/2/issue/$it.key")
                .header('Content-Type', 'application/json')
                .asObject(Map)
                .body
                .fields as Map
-        
-    
-         def timeObject = issuesForTime.find { it.key == 'timetracking' }?.value as Map
-         def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
-         sum_worklogs += time
+            
+//        Closure<Boolean> isTextFile = {
+//            File it -> it.name.endsWith('.txt')                     
+//         }        
+         
+        //  def timeObject = issue_details.find { it.key == 'timetracking' }?.value as Map
+//          def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
+//          sum_worklogs += time
+         
+         sum_worklogs += time_tracking_calc(issue_details)
+         
       }
   
       return (sum_worklogs / 3600).round(1)
