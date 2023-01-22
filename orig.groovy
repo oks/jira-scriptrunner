@@ -31,46 +31,7 @@ if (!epicKey) {
 }
 
 
-def is_finished = true
 
-int startAt = 0
-def sum = 0.0
-def scope = ''
-
-while (is_finished) {
-
-//Obtain all related epic issues, including sub-tasks
-def allChildIssues = get("/rest/api/2/search")
-    .queryString('jql', "linkedissue = $epicKey AND (issuetype = 'PM Task')")
-    .queryString('startAt', startAt)
-    .header('Content-Type', 'application/json')
-    .asObject(Map)
-    .body
-    .issues as List<Map>
-
-
-    int scope_count = (int) allChildIssues.size()
-    if (scope_count == 0) {
-    is_finished = false
-    } else {
-       startAt += scope_count
-    }
-
-def issues = allChildIssues.findAll { it.key != epicKey }
-
-issues.each {
-    def fields = get("/rest/api/2/issue/$it.key")
-        .header('Content-Type', 'application/json')
-        .asObject(Map)
-        .body
-        .fields as Map
-        
-    def numberCfValue = fields["timeoriginalestimate"] ?: 0
-    sum += numberCfValue as Float 
-    
-    def test = sumWorklogs("linkedissue = $epicKey AND (issuetype = 'PM Task')", epicKey, time_tracking_calc())
-}
-}
 
 logger.warn("sum = {}", sum)
 
@@ -91,57 +52,130 @@ put("/rest/api/2/issue/$epicKey")
 ///Helpers
 ///
 
-    def time_tracking_calc = { Map jira_issue ->  
+public Map enumerate_all_issues (String JQL, Object epicKey) {
+    def is_finished = true
+
+    int startAt = 0
+    
+    def sum_spent_design = 0.0
+    def sum_spent_pm = 0.0
+    
+    def sum_orig_design = 0.0
+    def sum_orig_communication = 0.0
+    def sum_orig_pm = 0.0
+    
+    def sum_ie_design = 0.0
+    def sum_ie_communication = 0.0
+    def sum_ie_pm = 0.0
+    
+    def scope_design = ''
+    def scope_pm = ''
+    
+    def Map result;
+
+
+    def sum_estimate = 0.0
+    def sum_spent = 0.0
+
+
+    while (is_finished) {
+
+        //Obtain all related epic issues, including sub-tasks
+        def allChildIssues = get("/rest/api/2/search")
+             .queryString('jql', JQL)
+             .queryString('startAt', startAt)
+             .header('Content-Type', 'application/json')
+             .asObject(Map)
+             .body
+             .issues as List<Map>
+
+
+        int scope_count = (int) allChildIssues.size()
+        if (scope_count == 0) {
+            is_finished = false
+        } else {
+          startAt += scope_count
+        }
+
+        def issues = allChildIssues.findAll { it.key != epicKey }
+
+        issues.each {
+            
+            def fields = get("/rest/api/2/issue/$it.key")
+            .header('Content-Type', 'application/json')
+            .asObject(Map)
+            .body
+            .fields as Map
+        
+        def numberCfValue = fields["timeoriginalestimate"] ?: 0
+        sum_estimate += numberCfValue as Float 
+        
+        def timeObject = fields.find { it.key == 'timetracking' }?.value as Map
+        def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
+        sum_spent += time
+        
+        result["sum_spent"] = (sum_spent / 3600).round(1)
+        result["sum_estimate"] = (sum_estimate / 3600).round(1)
+        
+        
+}
+}
+}
+
+
+
+
+
+
+
+
+    // def time_tracking_calc = { Map jira_issue ->  
+    //     def timeObject = jira_issue.find { it.key == 'timetracking' }?.value as Map
+    //     def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
+        
+    //     return time
+    // }
+
+    public Number time_tracking_calc (Map jira_issue) {
         def timeObject = jira_issue.find { it.key == 'timetracking' }?.value as Map
         def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
         
         return time
     }
+    
+    
 
-//     public Number time_tracking_calc (Map jira_issue) {
-//         def timeObject = jira_issue.find { it.key == 'timetracking' }?.value as Map
-//         def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
-        
-//         return time
-//     }
-
-   public Number sum_issue_fields(String jql, Object epic_key, function) { 
+//   public Number sum_issue_fields(String jql, Object epic_key, function) { 
        
-        def sum_worklogs = 0
-        def allChildIssues = get("/rest/api/2/search")
-             .queryString('jql', jql)
-             .header('Content-Type', 'application/json')
-             .asObject(Map)
-             .body
-             .issues as List<Map>
+//         def sum_worklogs = 0
+//         def allChildIssues = get("/rest/api/2/search")
+//              .queryString('jql', jql)
+//              .header('Content-Type', 'application/json')
+//              .asObject(Map)
+//              .body
+//              .issues as List<Map>
       
-     //Get all issues in Epic and skip Epic itself
-     def issues = allChildIssues.findAll { it.key != epic_key }   
-       
-       
+//      //Get all issues in Epic and skip Epic itself
+//      def issues = allChildIssues.findAll { it.key != epic_key }   
 
      
-     issues.each {
-         def issue_details = get("/rest/api/2/issue/$it.key")
-               .header('Content-Type', 'application/json')
-               .asObject(Map)
-               .body
-               .fields as Map
-            
-//        Closure<Boolean> isTextFile = {
-//            File it -> it.name.endsWith('.txt')                     
-//         }        
+//      issues.each {
+//          def issue_details = get("/rest/api/2/issue/$it.key")
+//               .header('Content-Type', 'application/json')
+//               .asObject(Map)
+//               .body
+//               .fields as Map
          
-        //  def timeObject = issue_details.find { it.key == 'timetracking' }?.value as Map
+//          def timeObject = issue_details.find { it.key == 'timetracking' }?.value as Map
 //          def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
 //          sum_worklogs += time
          
-         sum_worklogs += time_tracking_calc(issue_details)
+//         //  sum_worklogs += time_tracking_calc(issue_details)
          
-      }
+//       }
   
-      return (sum_worklogs / 3600).round(1)
-   } 
+//       return (sum_worklogs / 3600).round(1)
+//   } 
       
       
     public Object get_epic_key(String issue_id) {
