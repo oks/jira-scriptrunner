@@ -1,25 +1,25 @@
 //spent-p
 
-def spent-p = 'customfield_10040'
-def current-update = 'customfield_10054'
+def spent_p = 'customfield_10040'
+def current_update = 'customfield_10054'
 def ie = 'customfield_10035'
-def scope-des = 'customfield_10500'
-def scope-pm = 'customfield_10049'
+def scope_des = 'customfield_10500'
+def scope_pm = 'customfield_10049'
 def sumie = 'customfield_10074'
-def sum-ie-d = 'customfield_10039'
-def sum-ie-p = 'customfield_10038'
-def sum-orig-d = 'customfield_10042'
-def sum-orig-p = 'customfield_10041'
-def sum-orig-subtasks = 'customfield_10069'
-def sum-spent-d = 'customfield_10037'
-def sum-spent-p = 'customfield_10040'
+def sum_ie_d = 'customfield_10039'
+def sum_ie_p = 'customfield_10038'
+def sum_orig_d = 'customfield_10042'
+def sum_orig_p = 'customfield_10041'
+def sum_orig_subtasks = 'customfield_10069'
+def sum_spent_d = 'customfield_10037'
+def sum_spent_p = 'customfield_10040'
 
-def epic-link = 'customfield_10014'
+def epic_link = 'customfield_10014'
 
-def issue-type-pm-task = '10012'
-def issue-type-communication = '10015'
-def issue-type-design-component = '10011'
-def issue-type-design-subtask = '10016'
+def issue_type_pm_task = '10012'
+def issue_type_communication = '10015'
+def issue_type_design_component = '10011'
+def issue_type_design_subtask = '10016'
 
 
 //Scenario 
@@ -75,16 +75,16 @@ if (!epicKey) {
 }     
      
         
-def sum-all-design =  sumWorklogs("linkedissue = $epicKey AND (issuetype = 'PM Task')")    
-def sum-all-pm =  sumWorklogs("linkedissue = $epicKey")         
+def sum_all_design =  sumWorklogs("linkedissue = $epicKey AND (issuetype = 'PM Task')", epicKey)    
+def sum_all_pm =  sumWorklogs("linkedissue = $epicKey AND (issuetype != 'PM Task')", epicKey)         
         
 // Update Jira fields with calculated values    
 put("/rest/api/2/issue/$epicKey")
     .header("Content-Type", "application/json")
     .body([
         fields: [
-            "${sum-spent-d}": sum-all-design as Float,
-            "${sum-spent-p}": sum-all-pm as Float
+            "${sum_spent_d}": sum_all_design as Float,
+            "${sum_spent_p}": sum_all_pm as Float
         ]
     ]).asString()       
         
@@ -95,9 +95,9 @@ put("/rest/api/2/issue/$epicKey")
 ///
 ///Helpers
 ///
-   public int sumWorklogs(String jql) { 
+   public Number sumWorklogs(String jql, Object epic_key) { 
        
-        def sum-worklogs = 0
+        def sum_worklogs = 0
         def allChildIssues = get("/rest/api/2/search")
              .queryString('jql', jql)
              .header('Content-Type', 'application/json')
@@ -106,7 +106,7 @@ put("/rest/api/2/issue/$epicKey")
              .issues as List<Map>
       
      //Get all issues in Epic and skip Epic itself
-     def issues = allChildIssues.findAll { it.key != epicKey }   
+     def issues = allChildIssues.findAll { it.key != epic_key }   
        
      
      issues.each {
@@ -121,17 +121,13 @@ put("/rest/api/2/issue/$epicKey")
          def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
 
    
-         sum-worklogs += time / 3600
+         sum_worklogs += time / 3600
     
          logger.warn("time object = {}", timeObject)
          logger.warn("time = {}", time)
          logger.warn("key = {}", it.key)
       }
   
-      return sum-worklogs; 
+      return sum_worklogs
    } 
         
-
-
-
-    
