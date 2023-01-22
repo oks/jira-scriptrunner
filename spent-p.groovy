@@ -25,15 +25,6 @@ def issue_type_design_subtask = '10016'
 //Scenario 
 //When work is logged / updated / deleted recalculate Epic total time spent 
 
-//Epic Link Custom Field ID
-final epicLinkCf = get("/rest/api/2/field")
-    .asObject(List)
-    .body
-    .find {
-        (it as Map).name == 'Epic Link'
-    } as Map
-
-logger.warn("TRIGGERED ON worklog: $worklog")
 logger.warn("TRIGGERED ON ISSUE UPD: $worklog.issueId")
 
 
@@ -55,7 +46,7 @@ def isEpic = issueTypeName == "Epic"
 
 logger.warn("is Epic = {}", isEpic)
 
-def epicKey = issueFields.find { it.key == epicLinkCf.id }?.value
+def epicKey = issueFields.find { it.key == epic_link }?.value
 
 
 //If the issue is sub-task, Epic Key is obtained from the parent issue
@@ -66,7 +57,7 @@ if (isSubTask == 'true') {
         .body
         .fields as Map
 
-    epicKey = parentIssueField.find { it.key == epicLinkCf.id }.value
+    epicKey = parentIssueField.find { it.key == epic_link }.value
 }
 
 if (!epicKey) {
@@ -75,20 +66,22 @@ if (!epicKey) {
 }     
      
         
-def sum_all_design =  sumWorklogs("linkedissue = $epicKey AND (issuetype = 'PM Task')", epicKey)    
-def sum_all_pm =  sumWorklogs("linkedissue = $epicKey AND (issuetype != 'PM Task')", epicKey)         
-        
+def sum_all_design =  sumWorklogs("linkedissue = $epicKey AND (issuetype != 'PM Task')", epicKey)    
+def sum_all_pm =  sumWorklogs("linkedissue = $epicKey AND (issuetype = 'PM Task')", epicKey)         
+
+logger.warn("sum_all_design = {}", sum_all_design)
+logger.warn("sum_all_pm = {}", sum_all_pm)
+       
 // Update Jira fields with calculated values    
 put("/rest/api/2/issue/$epicKey")
     .header("Content-Type", "application/json")
     .body([
         fields: [
-            "${sum_spent_d}": sum_all_design as Float,
-            "${sum_spent_p}": sum_all_pm as Float
+            "${sum_spent_d}": sum_all_design,
+            "${sum_spent_p}": sum_all_pm
         ]
     ]).asString()       
         
-
 
 
 
@@ -119,15 +112,9 @@ put("/rest/api/2/issue/$epicKey")
     
          def timeObject = issuesForTime.find { it.key == 'timetracking' }?.value as Map
          def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
-
-   
-         sum_worklogs += time / 3600
-    
-         logger.warn("time object = {}", timeObject)
-         logger.warn("time = {}", time)
-         logger.warn("key = {}", it.key)
+         sum_worklogs += time
       }
   
-      return sum_worklogs
+      return (sum_worklogs / 3600).round(1)
    } 
         
