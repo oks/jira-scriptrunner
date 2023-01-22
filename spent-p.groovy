@@ -72,55 +72,66 @@ if (isSubTask == 'true') {
 if (!epicKey) {
     logger.warn("script abort - no epic found or its epic")
     return
-}
-
-
-//Obtain all related epic issues, including sub-tasks
-def allChildIssues = get("/rest/api/2/search")
-    .queryString('jql', "linkedissue = $epicKey AND (issuetype = 'PM Task')")
-    .header('Content-Type', 'application/json')
-    .asObject(Map)
-    .body
-    .issues as List<Map>
-
-def sum = 0
-def issues = allChildIssues.findAll { it.key != epicKey }
-
-issues.each {
-    def issuesForTime = get("/rest/api/2/issue/$it.key")
-        .header('Content-Type', 'application/json')
-        .asObject(Map)
-        .body
-        .fields as Map
+}     
+     
         
-    
-    def timeObject = issuesForTime.find { it.key == 'timetracking' }?.value as Map
-    def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
-    logger.warn("time object = {}", timeObject)
-    logger.warn("time = {}", time)
-    logger.warn("key = {}", it.key)
-    sum += time / 3600
-}
-
-logger.warn("sum = {}", sum)
-
-
-
-// // get legacy field from jira
-// def epicFields = get("/rest/api/2/issue/$epicKey")
-//     .asObject(Map)
-//     .body
-//     .fields as Map
-
-// def legacyJiraWorklogs = epicFields["customfield_10044"] ?: 0
-// sum += legacyJiraWorklogs as Float
-
-
+def sum-all-design =  sumWorklogs("linkedissue = $epicKey AND (issuetype = 'PM Task')")    
+def sum-all-pm =  sumWorklogs("linkedissue = $epicKey")         
+        
+// Update Jira fields with calculated values    
 put("/rest/api/2/issue/$epicKey")
     .header("Content-Type", "application/json")
     .body([
         fields: [
-            "${epic_field_to_update}": sum as Float
+            "${sum-spent-d}": sum-all-design as Float,
+            "${sum-spent-p}": sum-all-pm as Float
         ]
-    ]).asString()
+    ]).asString()       
+        
+
+
+
+
+///
+///Helpers
+///
+   public int sumWorklogs(String jql) { 
+       
+        def sum-worklogs = 0
+        def allChildIssues = get("/rest/api/2/search")
+             .queryString('jql', jql)
+             .header('Content-Type', 'application/json')
+             .asObject(Map)
+             .body
+             .issues as List<Map>
+      
+     //Get all issues in Epic and skip Epic itself
+     def issues = allChildIssues.findAll { it.key != epicKey }   
+       
+     
+     issues.each {
+         def issuesForTime = get("/rest/api/2/issue/$it.key")
+               .header('Content-Type', 'application/json')
+               .asObject(Map)
+               .body
+               .fields as Map
+        
+    
+         def timeObject = issuesForTime.find { it.key == 'timetracking' }?.value as Map
+         def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
+
+   
+         sum-worklogs += time / 3600
+    
+         logger.warn("time object = {}", timeObject)
+         logger.warn("time = {}", time)
+         logger.warn("key = {}", it.key)
+      }
+  
+      return sum-worklogs; 
+   } 
+        
+
+
+
     
