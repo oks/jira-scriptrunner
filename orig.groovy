@@ -13,12 +13,12 @@ def sum_orig_subtasks = 'customfield_10069'
 def sum_spent_d = 'customfield_10037'
 def sum_spent_p = 'customfield_10040'
 
-def issue_type_pm_task = '10012'
-def issue_type_communication = '10015'
-def issue_type_design_component = '10011'
-def issue_type_design_subtask = '10016'
+def sum_orig_comm = 'customfield_10077'
 
-def epic_field_to_update = 'customfield_10041'
+// def issue_type_pm_task = '10012'
+// def issue_type_communication = '10015'
+// def issue_type_design_component = '10011'
+// def issue_type_design_subtask = '10016'
 
 logger.warn("TRIGGERED ON ISSUE UPD: $issue.key")
 
@@ -51,6 +51,11 @@ def pm = calc_issues("linkedissue = $epicKey AND (issuetype = 'PM Task')", epicK
 def design = calc_issues("linkedissue = $epicKey AND (issuetype != 'PM Task')", epicKey)
 def communic = calc_issues("linkedissue = $epicKey AND (issuetype = 'Communication')", epicKey)
 
+logger.warn("sum pm = {}", pm)
+logger.warn("sum design = {}", design)
+logger.warn("sum communic = {}", communic)
+
+
 put("/rest/api/2/issue/$epicKey")
     .header("Content-Type", "application/json")
     .body([
@@ -63,11 +68,11 @@ put("/rest/api/2/issue/$epicKey")
             "${sum_orig_d}": design["sum_estimate"],
             "${sum_ie_d}": design["sum_ie"],
             "${scope_d}": design["sum_scope"],
+            "${sum_orig_comm}": communic["sum_estimate"]
         ]
     ]).asString()
     
 
-    
     
     ///
 ///Helpers
@@ -79,7 +84,6 @@ public Map calc_issues(String JQL, Object epicKey) {
     int startAt = 0
     
     def Map result;
-
 
     def sum_estimate = 0.0
     def sum_spent = 0.0
@@ -153,12 +157,12 @@ public Map calc_issues(String JQL, Object epicKey) {
     //     return time
     // }
 
-    public Number time_tracking_calc (Map jira_issue) {
-        def timeObject = jira_issue.find { it.key == 'timetracking' }?.value as Map
-        def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
+    // public Number time_tracking_calc (Map jira_issue) {
+    //     def timeObject = jira_issue.find { it.key == 'timetracking' }?.value as Map
+    //     def time = timeObject.find { it.key == 'timeSpentSeconds' }?.value as Float ?: 0
         
-        return time
-    }
+    //     return time
+    // }
     
     
 
