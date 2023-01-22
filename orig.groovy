@@ -1,3 +1,27 @@
+def spent_p = 'customfield_10040'
+def current_update = 'customfield_10054'
+def ie = 'customfield_10035'
+def scope_des = 'customfield_10500'
+def scope_pm = 'customfield_10049'
+def sumie = 'customfield_10074'
+def sum_ie_d = 'customfield_10039'
+def sum_ie_p = 'customfield_10038'
+def sum_orig_d = 'customfield_10042'
+def sum_orig_p = 'customfield_10041'
+def sum_orig_subtasks = 'customfield_10069'
+def sum_spent_d = 'customfield_10037'
+def sum_spent_p = 'customfield_10040'
+
+def epic_link = 'customfield_10014'
+
+def issue_type_pm_task = '10012'
+def issue_type_communication = '10015'
+def issue_type_design_component = '10011'
+def issue_type_design_subtask = '10016'
+
+
+
+
 def epic_field_to_update = 'customfield_10041'
 def workType = 'PM'
 
@@ -10,6 +34,7 @@ final epicLinkCf = get("/rest/api/2/field")
     } as Map
 
 logger.warn("TRIGGERED ON ISSUE UPD: $issue.key")
+
 def issueFields = get("/rest/api/2/issue/$issue.key")
     .asObject(Map)
     .body
