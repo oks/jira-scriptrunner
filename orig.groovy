@@ -1,4 +1,3 @@
-//spent-p
 
 def spent_p = 'customfield_10040'
 def current_update = 'customfield_10054'
@@ -19,41 +18,73 @@ def issue_type_communication = '10015'
 def issue_type_design_component = '10011'
 def issue_type_design_subtask = '10016'
 
+def epic_field_to_update = 'customfield_10041'
 
-//Scenario 
-//When work is logged / updated / deleted recalculate Epic total time spent 
+logger.warn("TRIGGERED ON ISSUE UPD: $issue.key")
 
-logger.warn("TRIGGERED ON ISSUE UPD: $worklog.issueId")
+def epicKey = get_epic_key(issue.key)
 
-     
-def epic_key = get_epic_key(worklog.issueId)
 
-if (!epic_key) {
+if (!epicKey) {
     logger.warn("script abort - no epic found or its epic")
     return
-} 
+}
 
-     
-def sum_all_design =  sumWorklogs("linkedissue = $epic_key AND (issuetype != 'PM Task')", epic_key)    
-def sum_all_pm =  sumWorklogs("linkedissue = $epic_key AND (issuetype = 'PM Task')", epic_key)         
 
-logger.warn("sum_all_design = {}", sum_all_design)
-logger.warn("sum_all_pm = {}", sum_all_pm)
-       
-// Update Jira fields with calculated values    
-put("/rest/api/2/issue/$epic_key")
+def is_finished = true
+
+int startAt = 0
+def sum = 0.0
+def scope = ''
+
+while (is_finished) {
+
+//Obtain all related epic issues, including sub-tasks
+def allChildIssues = get("/rest/api/2/search")
+    .queryString('jql', "linkedissue = $epicKey AND (issuetype = 'PM Task')")
+    .queryString('startAt', startAt)
+    .header('Content-Type', 'application/json')
+    .asObject(Map)
+    .body
+    .issues as List<Map>
+
+
+    int scope_count = (int) allChildIssues.size()
+    if (scope_count == 0) {
+    is_finished = false
+    } else {
+       startAt += scope_count
+    }
+
+def issues = allChildIssues.findAll { it.key != epicKey }
+
+issues.each {
+    def fields = get("/rest/api/2/issue/$it.key")
+        .header('Content-Type', 'application/json')
+        .asObject(Map)
+        .body
+        .fields as Map
+        
+    def numberCfValue = fields["timeoriginalestimate"] ?: 0
+    sum += numberCfValue as Float 
+}
+}
+
+logger.warn("sum = {}", sum)
+
+put("/rest/api/2/issue/$epicKey")
     .header("Content-Type", "application/json")
     .body([
         fields: [
-            "${sum_spent_d}": sum_all_design,
-            "${sum_spent_p}": sum_all_pm
+            "${epic_field_to_update}": (sum / 3600).round(1) as Float
         ]
-    ]).asString()       
-        
-
-
-
-///
+    ]).asString()
+    
+    
+    
+    
+    
+    ///
 ///Helpers
 ///
    public Number sumWorklogs(String jql, Object epic_key) { 
@@ -126,3 +157,6 @@ put("/rest/api/2/issue/$epic_key")
     
         return epicKey
     }  
+    
+    
+    
