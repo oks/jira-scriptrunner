@@ -1,6 +1,19 @@
 //spent-p
 
-def epic_field_to_update = 'customfield_10040'
+def spent-p = 'customfield_10040'
+def current-update = 'customfield_10054'
+def ie = 'customfield_10035'
+def scope-des = 'customfield_10500'
+def scope-pm = 'customfield_10049'
+def sumie = 'customfield_10074'
+def sum-ie-d = 'customfield_10039'
+def sum-ie-p = 'customfield_10038'
+def sum-orig-d = 'customfield_10042'
+def sum-orig-p = 'customfield_10041'
+def sum-orig-subtasks = 'customfield_10069'
+def sum-spent-d = 'customfield_10037'
+def sum-spent-p = 'customfield_10040'
+
 
 //Epic Link Custom Field ID
 final epicLinkCf = get("/rest/api/2/field")
