@@ -17,7 +17,6 @@ def estimated_des = 'customfield_10083'
 def added_hours = 'customfield_10084'
 def gpm = 'customfield_10085'
 
-
 def sum_orig_comm = 'customfield_10077'
 
 logger.warn("TRIGGERED ON ISSUE UPD: $issue.key")
@@ -38,6 +37,22 @@ logger.warn("sum pm = {}", pm)
 logger.warn("sum design = {}", design)
 logger.warn("sum communic = {}", communic)
 
+def epic_fields = get("/rest/api/2/issue/$epicKey")
+            .header('Content-Type', 'application/json')
+            .asObject(Map)
+            .body
+            .fields as Map
+            
+def estimatedValue = epic_fields[estimated_des] ?: 0 
+def added_total = (estimatedValue as Float) - (design["sum_spent"] as Float)
+
+if (added_total > 0) {
+    added_total = 0
+} else {
+    added_total = added_total*(-1)
+}
+
+logger.warn("added total = {}", added_total)
 
 put("/rest/api/2/issue/$epicKey")
     .header("Content-Type", "application/json")
@@ -51,7 +66,8 @@ put("/rest/api/2/issue/$epicKey")
             "${sum_orig_d}": design["sum_estimate"],
             "${sum_ie_d}": design["sum_ie"],
             "${scope_d}": design["sum_scope"],
-            "${sum_orig_comm}": communic["sum_estimate"]
+            "${sum_orig_comm}": communic["sum_estimate"],
+            "${added_hours}": added_total
         ]
     ]).asString()
     
