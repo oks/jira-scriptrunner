@@ -12,8 +12,10 @@ def sum_orig_p = 'customfield_10041'
 def sum_orig_subtasks = 'customfield_10069'
 def sum_spent_d = 'customfield_10037'
 def sum_spent_p = 'customfield_10040'
+
 def estimated_des = 'customfield_10083'
 def added_hours = 'customfield_10084'
+def gpm = 'customfield_10085'
 
 
 def sum_orig_comm = 'customfield_10077'
