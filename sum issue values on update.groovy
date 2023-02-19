@@ -15,7 +15,10 @@ def sum_spent_p = 'customfield_10040'
 
 def estimated_des = 'customfield_10083'
 def added_hours = 'customfield_10084'
-def gpm = 'customfield_10085'
+def gpm_usd = 'customfield_10085'
+def gpm_percent = 'customfield_10088'
+def total_spent_usd = 'customfield_10086'
+def total_revenue = 'customfield_10087'
 
 def sum_orig_comm = 'customfield_10077'
 
